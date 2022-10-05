@@ -266,23 +266,26 @@ for NUM_PILOT =  [NUM_ALL_USERS]   % No. of pilot [64 200 500 5000 50000 NUM_ALL
                 drawPointMtx3(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx3(drawPointMtxROW,drawPointMtxColumn) + length(D_est)/ NUM_ACT_USERS;
             elseif NUM_PILOT==NUM_ALL_USERS
 %                 tic
-%                 [B_est, H_est] = OMP_blind1(Y_pilot_rx,cwplt,SNR);  
-%                 [A_est,D_est ] = Data_LS(B_est,H_est,Y_data_rx, cwsbl,NUM_PILOT,acUsrIndx,acData,par);
-                [B_est, H_est] = Joint_OMP_blind(Y_pilot_rx,cwplt,Y_data_rx,cwsbl,SNR);
-                [A_est,D_est ] = Data_LS_innercycle(B_est,H_est,Y_data_rx, cwsbl,NUM_PILOT,acUsrIndx,acData,acUsr_pilot,cwplt,Y_pilot_rx,par); 
-%                 toc
+                [B_est, H_est] = OMP_blind(Y_pilot_rx,cwplt,SNR);  
+                [A_est,D_est ] = Data_LS(B_est,H_est,Y_data_rx, cwsbl,NUM_PILOT,acUsrIndx,acData,par);
                 drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) + length(intersect(B_est,acUsrIndx)) / NUM_ACT_USERS; 
                 drawPointMtx3(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx3(drawPointMtxROW,drawPointMtxColumn) + length(D_est)/ NUM_ACT_USERS;   
+
+                [B_est, H_est] = Joint_OMP_blind(Y_pilot_rx,cwplt,Y_data_rx,cwsbl,SNR);
+                [A_est,D_est ] = CS_Data_LS_innercycle(B_est,H_est,Y_data_rx, cwsbl,NUM_PILOT,acUsrIndx,acData(acUsrIndx,:),cwplt,Y_pilot_rx,par);
+%                 toc
+                drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx1(drawPointMtxROW+1,drawPointMtxColumn) + length(intersect(B_est,acUsrIndx)) / NUM_ACT_USERS; 
+                drawPointMtx3(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx3(drawPointMtxROW+1,drawPointMtxColumn) + length(D_est)/ NUM_ACT_USERS;   
 %                 drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) + toc;
             else       
                 [B_est, H_est] = OMP_blind(Y_pilot_rx,cwplt,SNR);    
                 drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) + length(intersect(B_est,pilot_choose)) / length(pilot_choose);
                 [A_est,D_est ] = Data_LS(B_est,H_est,Y_data_rx, cwsbl,NUM_PILOT,acUsrIndx,acData,par);
                 drawPointMtx3(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx3(drawPointMtxROW,drawPointMtxColumn) + length(D_est)/ NUM_ACT_USERS;                 
-%                 [B_est, H_est] = Joint_OMP_blind(Y_pilot_rx,cwplt,Y_data_rx,cwsbl,SNR);
-%                 drawPointMtx1(drawPointMtxROW+1,drawPointMtxColumn) = drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) + length(intersect(B_est,pilot_choose)) / length(pilot_choose);                 
-%                 [A_est,D_est ] = Data_LS_innercycle(B_est,H_est,Y_data_rx, cwsbl,NUM_PILOT,acUsrIndx,acData,acUsr_pilot,cwplt,Y_pilot_rx,par);
-%                 drawPointMtx3(drawPointMtxROW+1,drawPointMtxColumn) = drawPointMtx3(drawPointMtxROW,drawPointMtxColumn) + length(D_est)/ NUM_ACT_USERS;                             
+                [B_est, H_est] = Joint_OMP_blind(Y_pilot_rx,cwplt,Y_data_rx,cwsbl,SNR);
+                drawPointMtx1(drawPointMtxROW+1,drawPointMtxColumn) = drawPointMtx1(drawPointMtxROW+1,drawPointMtxColumn) + length(intersect(B_est,pilot_choose)) / length(pilot_choose);                 
+                [A_est,D_est ] = Data_LS_innercycle(B_est,H_est,Y_data_rx, cwsbl,NUM_PILOT,acUsrIndx,acData,acUsr_pilot,cwplt,Y_pilot_rx,par);
+                drawPointMtx3(drawPointMtxROW+1,drawPointMtxColumn) = drawPointMtx3(drawPointMtxROW+1,drawPointMtxColumn) + length(D_est)/ NUM_ACT_USERS;                             
             end           
             fprintf('NUM_PILOT = %d, ACT = %d, itr = %d \n',NUM_PILOT,NUM_ACT_USERS,itr);
                 
@@ -291,39 +294,7 @@ for NUM_PILOT =  [NUM_ALL_USERS]   % No. of pilot [64 200 500 5000 50000 NUM_ALL
     end
 end
 
-% drawPointMtx1(2:NUM_ROW,2:21)  = drawPointMtx1(2:NUM_ROW,2:21) ./ NUM_ITR;
-% drawPointMtx2(2:NUM_ROW,2:21)  = drawPointMtx2(2:NUM_ROW,2:21) ./ NUM_ITR;
-% drawPointMtx3(2:NUM_ROW,2:21)  = drawPointMtx3(2:NUM_ROW,2:21) ./ NUM_ITR;
+drawPointMtx1(2:NUM_ROW,2:end)  = drawPointMtx1(2:NUM_ROW,2:end) ./ NUM_ITR;
+drawPointMtx3(2:NUM_ROW,2:end)  = drawPointMtx3(2:NUM_ROW,2:end) ./ NUM_ITR;
 
-% %Drawing pic
-% figure
-% plot(drawPointMtx1(1,:),drawPointMtx1(2:NUM_ROW,:));
-% legend('LTE','CS-100pilot','CS-200pilot','CS-300pilot','CS-400pilot','CS-500pilot','CS-MUD');
-% % legend('LTE','CS-96pilot','CS-128pilot','CS-160pilot','CS-192pilot');
-% % title('act vs Pilot Detection Correct Ratio,no noise');
-% ylabel('Pilot Detection Correct Ratio');
-% xlabel('K');
-% grid on
-% hold all
-% 
-% figure
-% plot(drawPointMtx2(1,:),drawPointMtx2(2:NUM_ROW,:));
-% legend('LTE','CS-100pilot','CS-200pilot','CS-300pilot','CS-400pilot','CS-500pilot','CS-MUD');
-% % legend('LTE','CS-96pilot','CS-128pilot','CS-160pilot','CS-192pilot');
-% % title('act vs Active Detection Correct Ratio,no noise');
-% ylabel('Active Detection Correct Ratio');
-% xlabel('K');
-% grid on
-% hold all
-% 
-% figure
-% plot(drawPointMtx3(1,:),drawPointMtx3(2:NUM_ROW,:));
-% legend('LTE','CS-100pilot','CS-200pilot','CS-300pilot','CS-400pilot','CS-500pilot','CS-MUD');
-% % legend('LTE','CS-96pilot','CS-128pilot','CS-160pilot','CS-192pilot');
-% % title('act vs Data Detection Correct Ratio,no noise');
-% ylabel('Data Correct Ratio');
-% xlabel('K');
-% grid on
-% hold all
-% 
 % save('figure_diff_acc_1000000user_l72','drawPointMtx1','drawPointMtx2','drawPointMtx3');

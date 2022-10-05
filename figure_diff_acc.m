@@ -48,7 +48,7 @@ nOfProtctBandwidth = PO_FFT-nOfSubCrr;
 
 %====================User Parameter====================
 % No.of all users
-NUM_ALL_USERS = 1000000;
+NUM_ALL_USERS =1000000 ;%1000000
 % Length of Pilot in each RB*NUM_slot
 mp = 90;
 % No. of data symbol
@@ -115,12 +115,12 @@ par.Mod_Type=Mod_Type;
 par.A=A;
 
 drawPointMtxROW = 1; 
-for NUM_PILOT =  [5000]   % No. of pilot [64 200 500 5000 50000 NUM_ALL_USERS]  [64 200 5000 NUM_ALL_USERS]  
+for NUM_PILOT =  [200]   % No. of pilot [64 200 500 5000 50000 NUM_ALL_USERS]  [64 200 5000 NUM_ALL_USERS]  
     drawPointMtxColumn = 2;
     drawPointMtxROW = drawPointMtxROW + 2;
     drawPointMtx1(drawPointMtxROW,1) = NUM_PILOT;
     drawPointMtx3(drawPointMtxROW,1) = NUM_PILOT;     
-    for NUM_ACT_USERS = 15:5:140% 5:5:100
+    for NUM_ACT_USERS = 15:5:140% 15:5:140
         drawPointMtx1(1,drawPointMtxColumn) = NUM_ACT_USERS;
         drawPointMtx3(1,drawPointMtxColumn) = NUM_ACT_USERS;        
         NUM_ITR = 100;
@@ -132,7 +132,9 @@ for NUM_PILOT =  [5000]   % No. of pilot [64 200 500 5000 50000 NUM_ALL_USERS]  
             if NUM_PILOT==NUM_ALL_USERS
                 acUsrIndx = sort(randperm(NUM_ALL_USERS,NUM_ACT_USERS));
                 acUsr_pilot = zeros(NUM_ALL_USERS, 1);
-                acUsr_pilot(acUsrIndx,:)=acUsrIndx;
+                acUsr_pilot(acUsrIndx,:)=acUsrIndx;        
+
+                
             else 
                 %=================Step 1: random send pilot & ID &data  =================
                 % Indices of selected pilot (may be repeated)
@@ -151,8 +153,9 @@ for NUM_PILOT =  [5000]   % No. of pilot [64 200 500 5000 50000 NUM_ALL_USERS]  
                 %the pilot index for each active user
                 acUsr_pilot = zeros(NUM_ALL_USERS, 1);
                 acUsr_pilot(acUsrIndx,:)=pilotIndx;
+
             end    
-            
+
             % User ID 
             usrID = zeros(NUM_ALL_USERS,nEvryUsrIDBits);
             usrID(acUsrIndx,:) = de2bi(acUsrIndx,nEvryUsrIDBits,'left-msb');
@@ -163,7 +166,7 @@ for NUM_PILOT =  [5000]   % No. of pilot [64 200 500 5000 50000 NUM_ALL_USERS]  
             acData(acUsrIndx,nEvryUsrDataBits-nEvryUsrIDBits+1:nEvryUsrDataBits) = usrID(acUsrIndx,:);            
 
             clear usrID
-            
+
             % RS Coding
             RSmatrix = reshape(acData(acUsrIndx,:)',mRS,nEvryUsrDataBits*NUM_ACT_USERS/mRS)';
             RStrSbl = bi2de(RSmatrix,'left-msb');
@@ -172,14 +175,14 @@ for NUM_PILOT =  [5000]   % No. of pilot [64 200 500 5000 50000 NUM_ALL_USERS]  
             RS_encoded_Bits = de2bi(RS_encoded_Sbl',mRS,'left-msb');
             acdata_Aftr_RS = zeros(NUM_ALL_USERS,evryUsrBts_Aftr_RS);
             acdata_Aftr_RS(acUsrIndx,:) = reshape(RS_encoded_Bits',evryUsrBts_Aftr_RS,NUM_ACT_USERS)';          
-            
-           
+
+
             clear RSmatrix
             clear RStrSbl
             clear hEnc
             clear RS_encoded_Sbl
             clear RS_encoded_Bits
-            
+
             % Convolutionally encoding
             for q = 1:NUM_ACT_USERS
                 codeData(acUsrIndx(q),:) = convenc(acdata_Aftr_RS(acUsrIndx(q),:)', trellis);% Coding data
@@ -187,11 +190,11 @@ for NUM_PILOT =  [5000]   % No. of pilot [64 200 500 5000 50000 NUM_ALL_USERS]  
             matrix = reshape(codeData(acUsrIndx,:)',4,NUM_ACT_USERS*evryUsrBts_Aftr_RS/(BIT_PER_SBL*CONV_CODE_RATE));
             % Interleaving
             bits_Aftr_Itrlv = matintrlv(matrix,2,2)';
-     
+
             clear acdata_Aftr_RS  
             clear codeData  
             clear matrix 
-            
+
             %====================Modulation====================           
             if Mod_Type==1 % QPSK
                 %输入x为0 1 2 3  输出y为1+1i 1-1i -1+1i -1-1i
@@ -209,26 +212,26 @@ for NUM_PILOT =  [5000]   % No. of pilot [64 200 500 5000 50000 NUM_ALL_USERS]  
                 sbl_Aftr_Mod = zeros(NUM_ALL_USERS,evryUsrSbl);
                 sbl_Aftr_Mod(acUsrIndx,:) = reshape(qammod(dec,64),evryUsrSbl,NUM_ACT_USERS)';                
             end            
-                    
+
             clear bits_Aftr_Itrlv
             clear dec
-            
+
             %=================Mapping to TFCB=================
             % possible active users' free space loss coefficient
             Lc = repmat(rand(NUM_ALL_USERS,1),1,NUM_RX);      
-            
+
             % All users' M RXs channels in all TFCBs
             H = zeros(NUM_ALL_USERS,NUM_RX);
             %Rayleigh Channel
             H(acUsrIndx,:) = (1/sqrt(2))*(randn(NUM_ACT_USERS,NUM_RX)+1j*randn(NUM_ACT_USERS,NUM_RX));
             H = H .* Lc;
-            
+
             Xsbl = repelem(sbl_Aftr_Mod,1,NUM_RX);
             Hsbl_est = mat2cell(H,[size(H,1)],NUM_RX);
             Hsbl_est = repelem(Hsbl_est,1,nd);
             Hsbl_est = cell2mat(Hsbl_est);
             HX = Hsbl_est .* Xsbl;
-                     
+
             if NUM_PILOT==NUM_ALL_USERS
                 Y_pilot = cwplt*H;% Y of pilot
                 Y_data = cwsbl*HX;% Y of data
@@ -243,11 +246,11 @@ for NUM_PILOT =  [5000]   % No. of pilot [64 200 500 5000 50000 NUM_ALL_USERS]  
 
                 Y_pilot = cwplt*H_pilot;% Y of pilot
                 Y_data = cwsbl*HX_pilot;% Y of data
-            end
+            end            
+            
             
             Y_pilot_rx = awgn(Y_pilot,SNR,'measured');
-            Y_data_rx = awgn(Y_data,SNR,'measured');                                
-            
+            Y_data_rx = awgn(Y_data,SNR,'measured');              
             %=================Step 2: solve the selected pilot and data =================
             if NUM_PILOT == 64
                 [A_est,B_est, D_est,H_est]= LTE_FOUR_STEP_MIMO(Y_pilot_rx,cwplt,HX,cwsbl,acData,acUsrIndx,pilot_acUsr,acUsr_pilot,par,pilotIndx,pilot_choose);  
@@ -255,24 +258,20 @@ for NUM_PILOT =  [5000]   % No. of pilot [64 200 500 5000 50000 NUM_ALL_USERS]  
                 drawPointMtx3(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx3(drawPointMtxROW,drawPointMtxColumn) + length(D_est)/ NUM_ACT_USERS;
             elseif NUM_PILOT==NUM_ALL_USERS
 %                 tic
-%                 [B_est, H_est] = OMP_blind(Y_pilot_rx,cwplt,SNR);  
-%                 [A_est,D_est ] = Data_LS(B_est,H_est,Y_data_rx, cwsbl,NUM_PILOT,acUsrIndx,acData,par);
-                [B_est, H_est] = Joint_OMP_blind(Y_pilot_rx,cwplt,Y_data_rx,cwsbl,SNR);
-                [A_est,D_est ] = Data_LS_innercycle(B_est,H_est,Y_data_rx, cwsbl,NUM_PILOT,acUsrIndx,acData,acUsr_pilot,cwplt,Y_pilot_rx,par);
+                [B_est, H_est] = OMP_blind(Y_pilot_rx,cwplt,SNR);  
+                [A_est,D_est ] = Data_LS(B_est,H_est,Y_data_rx, cwsbl,NUM_PILOT,acUsrIndx,acData,par);
 %                 toc
-               
-
                 drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) + length(intersect(B_est,acUsrIndx)) / NUM_ACT_USERS; 
-%                 drawPointMtx2(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx2(drawPointMtxROW,drawPointMtxColumn) + sum(sum(abs(H(acUsrIndx,:)-H_est(acUsrIndx,:)).^2))/(length(acUsrIndx)*nOfTfcb);  
                 drawPointMtx3(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx3(drawPointMtxROW,drawPointMtxColumn) + length(D_est)/ NUM_ACT_USERS;   
+
+                [B_est, H_est] = Joint_OMP_blind(Y_pilot_rx,cwplt,Y_data_rx,cwsbl,SNR);
+                [A_est,D_est ] = CS_Data_LS_innercycle(B_est,H_est,Y_data_rx, cwsbl,NUM_PILOT,acUsrIndx,acData(acUsrIndx,:),cwplt,Y_pilot_rx,par);
+
+                drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx1(drawPointMtxROW+1,drawPointMtxColumn) + length(intersect(B_est,acUsrIndx)) / NUM_ACT_USERS; 
+                drawPointMtx3(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx3(drawPointMtxROW+1,drawPointMtxColumn) + length(D_est)/ NUM_ACT_USERS;   
 %                 drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) + toc;
             else    
-%                 
-%                 lambda=sqrt( sum(abs(Y_pilot_rx(: )).^2)/length(Y_pilot_rx(: ))/SNR);
-%                 Learn_Lambda=1;
-%                 [ B_est, H_est ]= MSBL_V1(cwplt, Y_pilot_rx, lambda, Learn_Lambda,pilot_choose);
-%                 drawPointMtx1(drawPointMtxROW+1,drawPointMtxColumn) = drawPointMtx1(drawPointMtxROW+1,drawPointMtxColumn) + length(intersect(B_est,pilot_choose)) / length(pilot_choose);
-                
+               
 %                 tic
                 [B_est, H_est] = OMP_blind(Y_pilot_rx,cwplt,SNR);    
                 drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) + length(intersect(B_est,pilot_choose)) / length(pilot_choose);
@@ -280,13 +279,12 @@ for NUM_PILOT =  [5000]   % No. of pilot [64 200 500 5000 50000 NUM_ALL_USERS]  
                 drawPointMtx3(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx3(drawPointMtxROW,drawPointMtxColumn) + length(D_est)/ NUM_ACT_USERS;            
 %                 toc
 %                 drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) = drawPointMtx1(drawPointMtxROW,drawPointMtxColumn) + toc;
-% 
-%                 
+             
 %                 tic
-%                 [B_est, H_est] = Joint_OMP_blind(Y_pilot_rx,cwplt,Y_data_rx,cwsbl,SNR);
-%                 drawPointMtx1(drawPointMtxROW+1,drawPointMtxColumn) = drawPointMtx1(drawPointMtxROW+1,drawPointMtxColumn) + length(intersect(B_est,pilot_choose)) / length(pilot_choose);                 
-%                 [A_est,D_est ] = Data_LS_innercycle(B_est,H_est,Y_data_rx, cwsbl,NUM_PILOT,acUsrIndx,acData,acUsr_pilot,cwplt,Y_pilot_rx,par);
-%                 drawPointMtx3(drawPointMtxROW+1,drawPointMtxColumn) = drawPointMtx3(drawPointMtxROW+1,drawPointMtxColumn) + length(D_est)/ NUM_ACT_USERS;   
+                [B_est, H_est] = Joint_OMP_blind(Y_pilot_rx,cwplt,Y_data_rx,cwsbl,SNR);
+                drawPointMtx1(drawPointMtxROW+1,drawPointMtxColumn) = drawPointMtx1(drawPointMtxROW+1,drawPointMtxColumn) + length(intersect(B_est,pilot_choose)) / length(pilot_choose);                 
+                [A_est,D_est ] = Data_LS_innercycle(B_est,H_est,Y_data_rx, cwsbl,NUM_PILOT,acUsrIndx,acData,acUsr_pilot,cwplt,Y_pilot_rx,par);
+                drawPointMtx3(drawPointMtxROW+1,drawPointMtxColumn) = drawPointMtx3(drawPointMtxROW+1,drawPointMtxColumn) + length(D_est)/ NUM_ACT_USERS;   
 %                 toc  
 %                 drawPointMtx1(drawPointMtxROW+1,drawPointMtxColumn) = drawPointMtx1(drawPointMtxROW+1,drawPointMtxColumn) + toc;
             end           
@@ -297,8 +295,7 @@ for NUM_PILOT =  [5000]   % No. of pilot [64 200 500 5000 50000 NUM_ALL_USERS]  
     end
 end
 
-drawPointMtx1(2:NUM_ROW,2:21)  = drawPointMtx1(2:NUM_ROW,2:21) ./ NUM_ITR;
-drawPointMtx2(2:NUM_ROW,2:21)  = drawPointMtx2(2:NUM_ROW,2:21) ./ NUM_ITR;
-drawPointMtx3(2:NUM_ROW,2:21)  = drawPointMtx3(2:NUM_ROW,2:21) ./ NUM_ITR;
+drawPointMtx1(2:NUM_ROW,2:end)  = drawPointMtx1(2:NUM_ROW,2:end) ./ NUM_ITR;
+drawPointMtx3(2:NUM_ROW,2:end)  = drawPointMtx3(2:NUM_ROW,2:end) ./ NUM_ITR;
 
 % save('figure_diff_acc_1000000user_l72','drawPointMtx1','drawPointMtx2','drawPointMtx3');
